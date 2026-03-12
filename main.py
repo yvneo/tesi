@@ -18,8 +18,5 @@ print("\n--- FASE 3: Addestramento e Valutazione Modello ---")
 results_df, report_df = train_and_evaluate_model(X_home, y_home, X_univr, y_univr)
 
 report_df.to_csv("risultati/RFreport.csv", index=False)
-print("\nReport salvato come 'report.csv'")
-
 results_df.to_csv("risultati/RFresults.csv", index=False)
-print("Risultati salvati come 'results.csv'")
 

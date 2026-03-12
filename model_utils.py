@@ -6,7 +6,7 @@
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import MinMaxScaler, LabelEncoder
-from sklearn.model_selection import train_test_split, KFold
+from sklearn.model_selection import KFold
 from sklearn.metrics import accuracy_score, balanced_accuracy_score, confusion_matrix, f1_score
 import numpy as np
 import pandas as pd
@@ -38,7 +38,7 @@ def train_and_evaluate_model(X_home, y_home, X_univr, y_univr):
         scaler = MinMaxScaler()
         X_train_scaled = scaler.fit_transform(X_train) #solo su training set
         X_test_scaled = scaler.transform(X_test) 
-        X_univr_scaled = scaler.transform(X_univr) #applico la stessa trasformazione anche a UniVR
+        X_univr_scaled = scaler.transform(X_univr) #applico la stessa normalizzazione anche a UniVR
 
         #addestro il modello 
         model = RandomForestClassifier(n_estimators=100, random_state=42)
@@ -70,15 +70,15 @@ def train_and_evaluate_model(X_home, y_home, X_univr, y_univr):
 
         results_report.append({'fold': fold+1, 'f1_home': f1_home, 'bal_acc_home': bal_acc_home, 'f1_univr': f1_univr, 'bal_acc_univr': bal_acc_univr })  #salvo statistiche generali 
 
-        df_results = pd.DataFrame(results)
-        df_report = pd.DataFrame(results_report)
+    df_results = pd.DataFrame(results)
+    df_report = pd.DataFrame(results_report)
 
-        #calvolo la matrice di confusione media
-        cm_home_avg = np.mean(cm_home_list, axis=0)
-        cm_univr_avg = np.mean(cm_univr_list, axis=0)
+    #calvolo la matrice di confusione media
+    cm_home_avg = np.mean(cm_home_list, axis=0)
+    cm_univr_avg = np.mean(cm_univr_list, axis=0)
 
-        #visualizzazione
-        plot_results(df_report, cm_home_avg, cm_univr_avg, class_names)
+    #visualizzazione
+    plot_results(df_report, cm_home_avg, cm_univr_avg, class_names)
 
     return df_results, df_report
 
@@ -87,7 +87,7 @@ def plot_results(df_report, cm_home_avg, cm_univr_avg, class_names):
     #preparazione dei dati per il barplot
     metrics = ['f1', 'bal_acc']
     plot_data = []
-    for metric in metrics:
+    for metric in metrics: #per ogni metrica (f1 e balanced accuracy) prendo i valori medi e deviazione standard per Home e UniVR
         for domain in ['home', 'univr']:
             col_name = f"{metric}_{domain}"
             mean_value = df_report[col_name].mean()
@@ -97,6 +97,7 @@ def plot_results(df_report, cm_home_avg, cm_univr_avg, class_names):
     plot_df = pd.DataFrame(plot_data)
 
     plt.figure(figsize=(10, 6))
+    #asse x metrica, y valore medio 
     sns.barplot(data = plot_df, x='Metric', y='Mean', hue='Domain', capsize=0.1)
     plt.title('Performance Comparison: Home vs UniVR (Mean ± Std)')
     plt.ylabel('Mean Score')
@@ -119,5 +120,3 @@ def plot_results(df_report, cm_home_avg, cm_univr_avg, class_names):
     plt.tight_layout()
     plt.savefig(f"grafici/heatmap_confusion_matrix.png", dpi=300, bbox_inches='tight')
     plt.show()
-
-    print("Grafici salvati in 'grafici/'")
