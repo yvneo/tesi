@@ -15,6 +15,22 @@ import seaborn as sns
 import os
 
 def train_and_evaluate_model(X_home, y_home, X_univr, y_univr):
+
+    #trovo le classi comuni tra i due dataset
+    common_classes = np.intersect1d(np.unique(y_home), np.unique(y_univr))
+
+    #filtro Home
+    mask_home = np.isin(y_home, common_classes)
+    X_home = X_home[mask_home]
+    y_home = y_home[mask_home]
+
+    #filtro UniVR
+    mask_univr = np.isin(y_univr, common_classes)
+    X_univr = X_univr[mask_univr]
+    y_univr = y_univr[mask_univr]
+    print("Numero campioni Home dopo filtro:", len(y_home))
+    print("Numero campioni UniVR dopo filtro:", len(y_univr))
+    
     #codifica le etichette
     label_encoder = LabelEncoder()
     y_home_encoded = label_encoder.fit_transform(y_home)
@@ -41,7 +57,7 @@ def train_and_evaluate_model(X_home, y_home, X_univr, y_univr):
         X_univr_scaled = scaler.transform(X_univr) #applico la stessa normalizzazione anche a UniVR
 
         #addestro il modello 
-        model = RandomForestClassifier(n_estimators=100, random_state=42)
+        model = RandomForestClassifier(n_estimators=100, random_state=42, class_weight='balanced') #class_weight bilancia le classi in caso di sbilanciamento
         model.fit(X_train_scaled, y_train)
 
         #valuto il modello sia su Home che su UniVR
@@ -97,7 +113,7 @@ def plot_results(df_report, cm_home_avg, cm_univr_avg, class_names):
     plot_df = pd.DataFrame(plot_data)
 
     plt.figure(figsize=(10, 6))
-    #asse x metrica, y valore medio 
+    #asse x metrica, y valore medio
     sns.barplot(data = plot_df, x='Metric', y='Mean', hue='Domain', capsize=0.1)
     plt.title('Performance Comparison: Home vs UniVR (Mean ± Std)')
     plt.ylabel('Mean Score')
