@@ -15,32 +15,18 @@ import seaborn as sns
 import os
 
 def train_and_evaluate_model(X_train_data, y_train_data, X_test_ext, y_test_ext, scenario_name):
+    #RECAP: X_train_data, y_train_data sono i dati su cui addestro il modello, X_test_ext, y_test_ext sono i dati su cui testare il modello
+    # X -> dati, y -> etichette 
 
-    #trovo le classi comuni tra i due dataset
-    #common_classes = np.intersect1d(np.unique(y_train_data), np.unique(y_test_ext))
-
-    #filtro Home
-    #mask_home = np.isin(y_train_data, common_classes)
-    #X_home = X_train_data[mask_home]
-    #y_home = y_train_data[mask_home]
-
-    #filtro UniVR
-    #mask_univr = np.isin(y_test_ext, common_classes)
-    #X_univr = X_test_ext[mask_univr]
-    #y_univr = y_test_ext[mask_univr]
-
-    #print("Numero campioni Home dopo filtro:", len(y_home))
-    #print("Numero campioni UniVR dopo filtro:", len(y_univr))
-    
-    # 1. CODIFICA DELLE ETICHETTE 
+    # 1. LABEL ENCODING
     label_encoder = LabelEncoder()
-    y_train_encoded = label_encoder.fit_transform(y_train_data) #imparo le classi dal training set
+    y_train_encoded = label_encoder.fit_transform(y_train_data) #imparo le classi dal training set e associo un numero a ciascuna classe
     y_ext_encoded = label_encoder.transform(y_test_ext) #applico la stessa codifica al test set esterno
     class_names = label_encoder.classes_
 
     # 2. CONFIGURAZIONE DELLA CROSS-VALIDATION
-    kf = KFold(n_splits=5, shuffle=True, random_state=42)
-    results_report = []
+    kf = KFold(n_splits=5, shuffle=True, random_state=42) #4 parti per train e una per test
+    results_report = [] #per salvare i risultati di ogni fold
     cm_internal_list = [] #per test fatti sulla stessa location di train
     cm_external_list = [] #per test fatti su location diversa da quella di train
 
@@ -50,18 +36,22 @@ def train_and_evaluate_model(X_train_data, y_train_data, X_test_ext, y_test_ext,
 
     for fold, (train_index, test_index) in enumerate(kf.split(X_train_data)):
         
+        #divido i dati in train e validazione val per questo fold
         X_train, X_val = X_train_data[train_index], X_train_data[test_index]
         y_train, y_val = y_train_encoded[train_index], y_train_encoded[test_index]
 
         # 3.SCALING 
+        #inizializzo vettori vuoti con stessa forma di originali 
         X_train_scaled = np.zeros_like(X_train, dtype=float)
         X_val_scaled = np.zeros_like(X_val, dtype=float)
         X_ext_scaled = np.zeros_like(X_test_ext, dtype=float)
 
         for group in feature_groups:
             scaler = MinMaxScaler()
+            #fit scaler solo sui dati di train per questo gruppo di feature
             data_to_fit = X_train[:, group].reshape(-1, 1)
             scaler.fit(data_to_fit)
+            #applico la trasformazione a train, val e test esterno per questo gruppo di feature
             for i in group:
                 X_train_scaled[:, i] = scaler.transform(X_train[:, i].reshape(-1, 1)).flatten()
                 X_val_scaled[:, i] = scaler.transform(X_val[:, i].reshape(-1, 1)).flatten()
@@ -72,10 +62,10 @@ def train_and_evaluate_model(X_train_data, y_train_data, X_test_ext, y_test_ext,
         model.fit(X_train_scaled, y_train)
 
         # 5. PREDIZIONI
-        y_pred_int = model.predict(X_val_scaled)
-        y_pred_ext = model.predict(X_ext_scaled)
+        y_pred_int = model.predict(X_val_scaled) #test su stessa location di train
+        y_pred_ext = model.predict(X_ext_scaled) #test su location diversa da quella di train
 
-        # 6. CALCOLO METRICHE
+        # 6. CALCOLO METRICHE: bal_acc = media della precisione di ogni singola classe, f1 = media armonica di precisione e recall, macro = media non pesata delle metriche per ogni classe
         f1_int = f1_score(y_val, y_pred_int, average='macro')
         f1_ext = f1_score(y_ext_encoded, y_pred_ext, average='macro')
         bal_acc_int = balanced_accuracy_score(y_val, y_pred_int)
@@ -96,14 +86,33 @@ def train_and_evaluate_model(X_train_data, y_train_data, X_test_ext, y_test_ext,
         
     # 8. REPoRT E VISUALIZZAZIONE
     df_report = pd.DataFrame(results_report)
+
+    #calcolo media e deviazione standard 
+    stats = (df_report.drop(columns='fold').agg(['mean', 'std'])*100).T
+    stats['Type'] = 'Global Metric (%)'
+
+    #media delle 5 matrici dei 5 fold per internal ed external
     cm_internal_avg = np.mean(cm_internal_list, axis=0)
     cm_external_avg = np.mean(cm_external_list, axis=0)
+
+    #creo dataframe per classi 
+    class_report = pd.DataFrame({
+        'mean': np.diag(cm_internal_avg), #percentuale di successo media quando train e test in stessa locarion
+        'std': np.std([np.diag(cm) for cm in cm_internal_list], axis=0), #oscillazione di questa percentuale nei 5 fold, train e test in stessa location
+        'mean_ext': np.diag(cm_external_avg), #percentuale di successo media quando train e test in location diversa
+        'std_ext': np.std([np.diag(cm) for cm in cm_external_list], axis=0), #oscillazione di questa percentuale nei 5 fold, train e test in location diversa
+        'Type': 'Per Class'
+    }, index=class_names)
+    class_report['Type'] = 'Per Class Accuracy (%)'
+    
+    final_report = pd.concat([stats, class_report], axis=0)
+    final_report = final_report.round(3)
+    final_report.to_csv(f"risultati/final_report_{scenario_name}.csv", index=True)
 
     # Visualizzazione
     plot_results(df_report, cm_internal_avg, cm_external_avg, class_names, scenario_name)
 
     return df_report
-
 
 
 def plot_results(df_report, cm_internal_avg, cm_external_avg, class_names, scenario_name):
@@ -148,3 +157,4 @@ def plot_results(df_report, cm_internal_avg, cm_external_avg, class_names, scena
     plt.tight_layout()
     plt.savefig(f"grafici/heatmap_{scenario_name}.png", dpi=300)
     plt.show()
+

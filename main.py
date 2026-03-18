@@ -32,16 +32,16 @@ print(f"Campioni Home dopo filtro: {len(y_home_filtered)} | Campioni UniVR dopo 
 #SCENARIO 1: Addestramento su Home, test su UniVR
 print("\nSCENARIO 1: Addestramento su Home, test su UniVR")
 report_scenario_1 = train_and_evaluate_model(X_home_filtered, y_home_filtered, X_univr_filtered, y_univr_filtered, scenario_name="Home_vs_UniVR")
-report_scenario_1.to_csv("report_scenario_1.csv", index=False)
+report_scenario_1.to_csv("risultati/report_scenario_1.csv", index=False)
 
 #SCENARIO 2: Addestramento su UniVR, test su Home
 print("\nSCENARIO 2: Addestramento su UniVR, test su Home")
 report_scenario_2 = train_and_evaluate_model(X_univr_filtered, y_univr_filtered, X_home_filtered, y_home_filtered, scenario_name="UniVR_vs_Home")
-report_scenario_2.to_csv("report_scenario_2.csv", index=False)
+report_scenario_2.to_csv("risultati/report_scenario_2.csv", index=False)
 
 #SCENARIO 3: Addestramento su dati combinati, test su Home
 print("\nSCENARIO 3: Addestramento su dati combinati, test su Home")
 X_combined = np.vstack((X_home_filtered, X_univr_filtered))
 y_combined = np.concatenate((y_home_filtered, y_univr_filtered))
 report_scenario_3 = train_and_evaluate_model(X_combined, y_combined, X_home_filtered, y_home_filtered, scenario_name="Combined_vs_Home")
-report_scenario_3.to_csv("report_scenario_3.csv", index=False)
+report_scenario_3.to_csv("risultati/report_scenario_3.csv", index=False)
