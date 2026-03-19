@@ -8,8 +8,6 @@
 import pandas as pd
 import os
 
-#definzione del path del dataset
-#DATASET_PATH = "/storage_14tb/workspace_idio/UniVR_Data/dataset_df_exact_no0load_saturated_handshake_tail_no0loadFilter_extended_94bde95_7e0dbc17/"
 
 def load_and_split_data(DATASET_PATH):
     #creo il persorso completo per ogni file .parquet presente nella cartella
@@ -26,8 +24,3 @@ def load_and_split_data(DATASET_PATH):
 
     return df_home, df_univr
 
-#if __name__ == "__main__":
-    #print("Caricamento e divisione dei dati in corso...")
-    #df_home, df_univr = load_and_split_data()
-    #print(f"Location A (Home 1) - Numero di campioni: {len(df_home)}")
-    #print(f"Location B (UniVR) - Numero di campioni: {len(df_univr)}")

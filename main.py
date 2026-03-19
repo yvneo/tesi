@@ -18,7 +18,8 @@ print(f"Matrice UniVR. Forma: {X_univr.shape}")
 
 print("\n--- FASE 3: Addestramento e Valutazione Modello ---")
 
-common_classes = np.intersect1d(np.unique(y_home), np.unique(y_univr))
+#garantisco che il modello sia testato e addestrato su stesse applicazioni in entrambe location
+common_classes = np.intersect1d(np.unique(y_home), np.unique(y_univr)) #intersezione 
 
 filter_home = np.isin(y_home, common_classes)
 filter_univr = np.isin(y_univr, common_classes)
@@ -41,7 +42,7 @@ report_scenario_2.to_csv("risultati/report_scenario_2.csv", index=False)
 
 #SCENARIO 3: Addestramento su dati combinati, test su Home
 print("\nSCENARIO 3: Addestramento su dati combinati, test su Home")
-X_combined = np.vstack((X_home_filtered, X_univr_filtered))
-y_combined = np.concatenate((y_home_filtered, y_univr_filtered))
+X_combined = np.vstack((X_home_filtered, X_univr_filtered)) #unisco dati
+y_combined = np.concatenate((y_home_filtered, y_univr_filtered)) #unisco etichette
 report_scenario_3 = train_and_evaluate_model(X_combined, y_combined, X_home_filtered, y_home_filtered, scenario_name="Combined_vs_Home")
 report_scenario_3.to_csv("risultati/report_scenario_3.csv", index=False)

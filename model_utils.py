@@ -40,7 +40,7 @@ def train_and_evaluate_model(X_train_data, y_train_data, X_test_ext, y_test_ext,
         X_train, X_val = X_train_data[train_index], X_train_data[test_index]
         y_train, y_val = y_train_encoded[train_index], y_train_encoded[test_index]
 
-        # 3.SCALING 
+        # 3.SCALING per feature, non per pacchetto 
         #inizializzo vettori vuoti con stessa forma di originali 
         X_train_scaled = np.zeros_like(X_train, dtype=float)
         X_val_scaled = np.zeros_like(X_val, dtype=float)
@@ -49,8 +49,8 @@ def train_and_evaluate_model(X_train_data, y_train_data, X_test_ext, y_test_ext,
         for group in feature_groups:
             scaler = MinMaxScaler()
             #fit scaler solo sui dati di train per questo gruppo di feature
-            data_to_fit = X_train[:, group].reshape(-1, 1)
-            scaler.fit(data_to_fit)
+            data_to_fit = X_train[:, group].reshape(-1, 1) #nella matrice di addestramento prendo tutte le righe delle colonne del gruppo di feature, reshape per avere una matrice colonna
+            scaler.fit(data_to_fit) #calcolo min e max su questi dati per questo gruppo di feature
             #applico la trasformazione a train, val e test esterno per questo gruppo di feature
             for i in group:
                 X_train_scaled[:, i] = scaler.transform(X_train[:, i].reshape(-1, 1)).flatten()
@@ -144,13 +144,13 @@ def plot_results(df_report, cm_internal_avg, cm_external_avg, class_names, scena
     fig, axes = plt.subplots(1, 2, figsize=(18, 7))
     sns.heatmap(cm_internal_avg, annot=True, fmt=".1f", cmap='Blues', 
                 xticklabels=class_names, yticklabels=class_names, ax=axes[0])
-    axes[0].set_title('Avg Confusion Matrix % - Internal ({scenario_name})')
+    axes[0].set_title(f'Avg Confusion Matrix % - Internal ({scenario_name})')
     axes[0].set_xlabel('Predicted Label')
     axes[0].set_ylabel('True Label')
 
     sns.heatmap(cm_external_avg, annot=True, fmt=".1f", cmap='Blues', 
                 xticklabels=class_names, yticklabels=class_names, ax=axes[1])
-    axes[1].set_title('Avg Confusion Matrix % - External ({scenario_name})')
+    axes[1].set_title(f'Avg Confusion Matrix % - External ({scenario_name})')
     axes[1].set_xlabel('Predicted Label')
     axes[1].set_ylabel('True Label')
 
