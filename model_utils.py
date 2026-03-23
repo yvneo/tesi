@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import os
 
-def train_and_evaluate_model(X_train_data, y_train_data, X_test_ext, y_test_ext, scenario_name):
+def train_and_evaluate_model(X_train_data, y_train_data, X_test_ext, y_test_ext, scenario_name, taxonomy_label):
     #RECAP: X_train_data, y_train_data sono i dati su cui addestro il modello, X_test_ext, y_test_ext sono i dati su cui testare il modello
     # X -> dati, y -> etichette 
 
@@ -32,7 +32,6 @@ def train_and_evaluate_model(X_train_data, y_train_data, X_test_ext, y_test_ext,
 
     #definisco i gruppi di feature per lo scaling: L4_payload_lenght, iat_micros, packet_dir, TCP_win_size
     feature_groups =[range(0, 10), range(10, 20), range(20, 30), range(30, 40)]
-
 
     for fold, (train_index, test_index) in enumerate(kf.split(X_train_data)):
         
@@ -66,15 +65,16 @@ def train_and_evaluate_model(X_train_data, y_train_data, X_test_ext, y_test_ext,
         y_pred_ext = model.predict(X_ext_scaled) #test su location diversa da quella di train
 
         # 6. CALCOLO METRICHE: bal_acc = media della precisione di ogni singola classe, f1 = media armonica di precisione e recall, macro = media non pesata delle metriche per ogni classe
-        f1_int = f1_score(y_val, y_pred_int, average='macro')
-        f1_ext = f1_score(y_ext_encoded, y_pred_ext, average='macro')
-        bal_acc_int = balanced_accuracy_score(y_val, y_pred_int)
-        bal_acc_ext = balanced_accuracy_score(y_ext_encoded, y_pred_ext)
+        f1_int = f1_score(y_val, y_pred_int, average='macro')*100
+        f1_ext = f1_score(y_ext_encoded, y_pred_ext, average='macro')*100
+        bal_acc_int = balanced_accuracy_score(y_val, y_pred_int)*100
+        bal_acc_ext = balanced_accuracy_score(y_ext_encoded, y_pred_ext)*100
 
         results_report.append({
             'fold': fold+1, 
-            'f1_Internal': f1_int, 'bal_acc_Internal': bal_acc_int,
-            'f1_External': f1_ext, 'bal_acc_External': bal_acc_ext 
+            'f1_ID': f1_int, 'bal_acc_ID': bal_acc_int,
+            'f1_OOD_or_JD': f1_ext, 'bal_acc_OOD_or_JD': bal_acc_ext,
+            'Taxonomy': taxonomy_label
         })
 
         # 7. MATRICI DI CONFUSIONE NORMALIZZATE IN PERCENTUALE
@@ -88,7 +88,8 @@ def train_and_evaluate_model(X_train_data, y_train_data, X_test_ext, y_test_ext,
     df_report = pd.DataFrame(results_report)
 
     #calcolo media e deviazione standard 
-    stats = (df_report.drop(columns='fold').agg(['mean', 'std'])*100).T
+    numeric_cols = df_report.select_dtypes(include=[np.number]).drop(columns=['fold'])
+    stats = numeric_cols.agg(['mean', 'std']).T
     stats['Type'] = 'Global Metric (%)'
 
     #media delle 5 matrici dei 5 fold per internal ed external
@@ -106,51 +107,27 @@ def train_and_evaluate_model(X_train_data, y_train_data, X_test_ext, y_test_ext,
     class_report['Type'] = 'Per Class Accuracy (%)'
     
     final_report = pd.concat([stats, class_report], axis=0)
-    final_report = final_report.round(3)
+    final_report = final_report.round(2)
     final_report.to_csv(f"risultati/final_report_{scenario_name}.csv", index=True)
 
     # Visualizzazione
-    plot_results(df_report, cm_internal_avg, cm_external_avg, class_names, scenario_name)
+    plot_results(df_report, cm_internal_avg, cm_external_avg, class_names, scenario_name, taxonomy_label)
 
     return df_report
 
 
-def plot_results(df_report, cm_internal_avg, cm_external_avg, class_names, scenario_name):
-    #preparazione dei dati per il barplot
-    metrics = ['f1', 'bal_acc']
-    domains = {'Internal', 'External'}
-    plot_data = []
-
-    for _, row in df_report.iterrows():
-        for m in metrics:
-            for d in domains:
-                plot_data.append({
-                    'Metric': m,
-                    'Location': d,
-                    'Score': row[f"{m}_{d}"]
-                })
-
-    plot_df = pd.DataFrame(plot_data)
-
-    plt.figure(figsize=(10, 6))
-    #asse x metrica, y valore medio
-    sns.barplot(data = plot_df, x='Metric', y='Score', hue='Location', capsize=0.1, errorbar='sd')
-    plt.title(f'Performance Scenario: {scenario_name}')
-    plt.ylim(0, 1.1)
-    plt.savefig(f"grafici/barplot_performance_{scenario_name}.png", dpi=300, bbox_inches='tight')
-    plt.show()
-
+def plot_results(df_report, cm_internal_avg, cm_external_avg, class_names, scenario_name, taxonomy_label):
     #heatmap 
     fig, axes = plt.subplots(1, 2, figsize=(18, 7))
     sns.heatmap(cm_internal_avg, annot=True, fmt=".1f", cmap='Blues', 
                 xticklabels=class_names, yticklabels=class_names, ax=axes[0])
-    axes[0].set_title(f'Avg Confusion Matrix % - Internal ({scenario_name})')
+    axes[0].set_title(f'Avg Confusion Matrix % - ID ')
     axes[0].set_xlabel('Predicted Label')
     axes[0].set_ylabel('True Label')
 
-    sns.heatmap(cm_external_avg, annot=True, fmt=".1f", cmap='Blues', 
+    sns.heatmap(cm_external_avg, annot=True, fmt=".1f", cmap='Oranges', 
                 xticklabels=class_names, yticklabels=class_names, ax=axes[1])
-    axes[1].set_title(f'Avg Confusion Matrix % - External ({scenario_name})')
+    axes[1].set_title(f'Avg Confusion Matrix % - {taxonomy_label} ({scenario_name})')
     axes[1].set_xlabel('Predicted Label')
     axes[1].set_ylabel('True Label')
 

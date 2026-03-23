@@ -1,0 +1,23 @@
+,mean,std,Type,mean_ext,std_ext
+f1_ID,92.05,0.8,Global Metric (%),,
+bal_acc_ID,92.09,0.78,Global Metric (%),,
+f1_OOD_or_JD,98.06,0.18,Global Metric (%),,
+bal_acc_OOD_or_JD,98.19,0.18,Global Metric (%),,
+Aliexpress,96.34,1.38,Per Class Accuracy (%),99.25,0.31
+Amazon,95.18,0.93,Per Class Accuracy (%),98.93,0.16
+Discord,94.45,3.45,Per Class Accuracy (%),98.85,0.78
+Duolingo,95.61,0.89,Per Class Accuracy (%),98.9,0.17
+Facebook,90.69,5.11,Per Class Accuracy (%),98.06,1.17
+Instagram,82.86,3.39,Per Class Accuracy (%),96.58,0.71
+Reddit,94.59,0.82,Per Class Accuracy (%),98.24,0.13
+Shein,94.21,2.41,Per Class Accuracy (%),98.35,0.41
+Snapchat,90.14,4.14,Per Class Accuracy (%),97.98,0.93
+SoundCloud,87.95,1.54,Per Class Accuracy (%),96.54,0.18
+Spotify,88.94,4.1,Per Class Accuracy (%),97.85,0.71
+Subito,91.6,3.29,Per Class Accuracy (%),97.6,0.67
+Temu,97.26,0.82,Per Class Accuracy (%),99.46,0.15
+Threads,84.9,7.84,Per Class Accuracy (%),96.96,1.62
+TikTok,96.14,0.6,Per Class Accuracy (%),99.15,0.13
+Twitch,96.67,0.25,Per Class Accuracy (%),98.95,0.23
+Youtube,89.79,2.14,Per Class Accuracy (%),97.94,0.58
+YoutubeMusic,90.35,2.65,Per Class Accuracy (%),97.87,0.67
