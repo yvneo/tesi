@@ -23,7 +23,7 @@ def get_model(model_name, seed):
     elif model_name == 'knn':
         return KNeighborsClassifier(n_neighbors=5, weights='distance')
     elif model_name == 'xgboost':
-        return XGBClassifier(n_estimators=100, random_state=seed, use_label_encoder=False, eval_metric='mlogloss')
+        return XGBClassifier(n_estimators=100, max_depth=3, random_state=seed, eval_metric='mlogloss', tree_method='hist', n_jobs=-1)
     else:
         raise ValueError(f"Model {model_name} not supported.")
 
@@ -38,13 +38,13 @@ def train_and_evaluate_model(X_train_data, y_train_data, X_test_ext, y_test_ext,
     class_names = label_encoder.classes_
 
     # 2. CONFIGURAZIONE DELLA CROSS-VALIDATION
-    kf = KFold(n_splits=5, shuffle=True, random_state=seed) #4 parti per train e una per test
+    kf = KFold(n_splits=3, shuffle=True, random_state=seed) #4 parti per train e una per test
     results_report = [] #per salvare i risultati di ogni fold
     cm_internal_list = [] #per test fatti sulla stessa location di train
     cm_external_list = [] #per test fatti su location diversa da quella di train
 
     #definisco i gruppi di feature per lo scaling: L4_payload_lenght, iat_micros, packet_dir, TCP_win_size
-    feature_groups =[range(0, 10), range(10, 20), range(20, 30), range(30, 40)]
+    feature_groups =[range(0, num_packets), range(num_packets, num_packets*2), range(num_packets*2, num_packets*3), range(num_packets*3, num_packets*4)]
 
     for fold, (train_index, test_index) in enumerate(kf.split(X_train_data)):
         
@@ -54,20 +54,20 @@ def train_and_evaluate_model(X_train_data, y_train_data, X_test_ext, y_test_ext,
 
         # 3.SCALING per feature, non per pacchetto 
         #inizializzo vettori vuoti con stessa forma di originali 
-        X_train_scaled = np.zeros_like(X_train, dtype=float)
-        X_val_scaled = np.zeros_like(X_val, dtype=float)
-        X_ext_scaled = np.zeros_like(X_test_ext, dtype=float)
+        X_train_scaled = X_train.copy().astype(float)
+        X_val_scaled = X_val.copy().astype(float)
+        X_ext_scaled = X_test_ext.copy().astype(float)
 
         for group in feature_groups:
             scaler = MinMaxScaler()
-            #fit scaler solo sui dati di train per questo gruppo di feature
-            data_to_fit = X_train[:, group].reshape(-1, 1) #nella matrice di addestramento prendo tutte le righe delle colonne del gruppo di feature, reshape per avere una matrice colonna
-            scaler.fit(data_to_fit) #calcolo min e max su questi dati per questo gruppo di feature
-            #applico la trasformazione a train, val e test esterno per questo gruppo di feature
-            for i in group:
-                X_train_scaled[:, i] = scaler.transform(X_train[:, i].reshape(-1, 1)).flatten()
-                X_val_scaled[:, i] = scaler.transform(X_val[:, i].reshape(-1, 1)).flatten()
-                X_ext_scaled[:, i] = scaler.transform(X_test_ext[:, i].reshape(-1, 1)).flatten()
+            # Trasformiamo il gruppo in un'unica colonna gigante per calcolare Min/Max globali del gruppo
+            train_group = X_train[:, group]
+            scaler.fit(train_group.reshape(-1, 1))
+            
+            # Applichiamo la trasformazione all'intero blocco di colonne in un colpo solo!
+            X_train_scaled[:, group] = scaler.transform(train_group.reshape(-1, 1)).reshape(train_group.shape)
+            X_val_scaled[:, group] = scaler.transform(X_val[:, group].reshape(-1, 1)).reshape(X_val[:, group].shape)
+            X_ext_scaled[:, group] = scaler.transform(X_test_ext[:, group].reshape(-1, 1)).reshape(X_test_ext[:, group].shape)
 
         # 4. ADDDESTRAMENTO MODELLO
         model = get_model(model_type, seed)
@@ -96,6 +96,7 @@ def train_and_evaluate_model(X_train_data, y_train_data, X_test_ext, y_test_ext,
 
         cm_internal_list.append(cm_int)
         cm_external_list.append(cm_ext)
+        print("Ho finito il fold ", fold+1, " su ", scenario_name)
         
     # 8. REPoRT E VISUALIZZAZIONE
     df_report = pd.DataFrame(results_report)
