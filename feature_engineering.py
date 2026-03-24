@@ -5,7 +5,7 @@
 #risultato array numpy con N righe e 40 colonne 
 
 import numpy as np
-def extract_features(df, num_packets=10):
+def extract_features(df, num_packets):
     features_list = [] #contiene righe da 40 numeri
     labels_list = [] #contiene etichette 
     

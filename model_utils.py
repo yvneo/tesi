@@ -5,16 +5,29 @@
 #label encoding 
 
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from xgboost import XGBClassifier
 from sklearn.preprocessing import MinMaxScaler, LabelEncoder
 from sklearn.model_selection import KFold
 from sklearn.metrics import accuracy_score, balanced_accuracy_score, confusion_matrix, f1_score
 import numpy as np
+import random
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
 
-def train_and_evaluate_model(X_train_data, y_train_data, X_test_ext, y_test_ext, scenario_name, taxonomy_label):
+def get_model(model_name, seed):
+    if model_name == 'rf':
+        return RandomForestClassifier(n_estimators=100, random_state=seed, class_weight='balanced')
+    elif model_name == 'knn':
+        return KNeighborsClassifier(n_neighbors=5, weights='distance')
+    elif model_name == 'xgboost':
+        return XGBClassifier(n_estimators=100, random_state=seed, use_label_encoder=False, eval_metric='mlogloss')
+    else:
+        raise ValueError(f"Model {model_name} not supported.")
+
+def train_and_evaluate_model(X_train_data, y_train_data, X_test_ext, y_test_ext, scenario_name, taxonomy_label, model_type, seed, num_packets):
     #RECAP: X_train_data, y_train_data sono i dati su cui addestro il modello, X_test_ext, y_test_ext sono i dati su cui testare il modello
     # X -> dati, y -> etichette 
 
@@ -25,7 +38,7 @@ def train_and_evaluate_model(X_train_data, y_train_data, X_test_ext, y_test_ext,
     class_names = label_encoder.classes_
 
     # 2. CONFIGURAZIONE DELLA CROSS-VALIDATION
-    kf = KFold(n_splits=5, shuffle=True, random_state=42) #4 parti per train e una per test
+    kf = KFold(n_splits=5, shuffle=True, random_state=seed) #4 parti per train e una per test
     results_report = [] #per salvare i risultati di ogni fold
     cm_internal_list = [] #per test fatti sulla stessa location di train
     cm_external_list = [] #per test fatti su location diversa da quella di train
@@ -57,7 +70,7 @@ def train_and_evaluate_model(X_train_data, y_train_data, X_test_ext, y_test_ext,
                 X_ext_scaled[:, i] = scaler.transform(X_test_ext[:, i].reshape(-1, 1)).flatten()
 
         # 4. ADDDESTRAMENTO MODELLO
-        model = RandomForestClassifier(n_estimators=100, random_state=42, class_weight='balanced')
+        model = get_model(model_type, seed)
         model.fit(X_train_scaled, y_train)
 
         # 5. PREDIZIONI
@@ -108,15 +121,15 @@ def train_and_evaluate_model(X_train_data, y_train_data, X_test_ext, y_test_ext,
     
     final_report = pd.concat([stats, class_report], axis=0)
     final_report = final_report.round(2)
-    final_report.to_csv(f"risultati/final_report_{scenario_name}.csv", index=True)
+    final_report.to_csv(f"risultati/{model_type}/{num_packets}/final_report_{scenario_name}.csv", index=True)
 
     # Visualizzazione
-    plot_results(df_report, cm_internal_avg, cm_external_avg, class_names, scenario_name, taxonomy_label)
+    plot_results(df_report, cm_internal_avg, cm_external_avg, class_names, scenario_name, taxonomy_label, model_type, num_packets)
 
     return df_report
 
 
-def plot_results(df_report, cm_internal_avg, cm_external_avg, class_names, scenario_name, taxonomy_label):
+def plot_results(df_report, cm_internal_avg, cm_external_avg, class_names, scenario_name, taxonomy_label, model_type, num_packets):
     #heatmap 
     fig, axes = plt.subplots(1, 2, figsize=(18, 7))
     sns.heatmap(cm_internal_avg, annot=True, fmt=".1f", cmap='Blues', 
@@ -132,6 +145,6 @@ def plot_results(df_report, cm_internal_avg, cm_external_avg, class_names, scena
     axes[1].set_ylabel('True Label')
 
     plt.tight_layout()
-    plt.savefig(f"grafici/heatmap_{scenario_name}.png", dpi=300)
+    plt.savefig(f"grafici/{model_type}/{num_packets}/heatmap_{scenario_name}.png", dpi=300)
     plt.show()
 
