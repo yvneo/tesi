@@ -21,7 +21,7 @@ def get_model(model_name, seed):
     if model_name == 'rf':
         return RandomForestClassifier(n_estimators=100, random_state=seed, class_weight='balanced')
     elif model_name == 'knn':
-        return KNeighborsClassifier(n_neighbors=5, weights='distance')
+        return KNeighborsClassifier(n_neighbors=20, metric = 'manhattan', weights='distance')
     elif model_name == 'xgboost':
         return XGBClassifier(# --- PERFORMANCE E VELOCITÀ ---
             n_estimators=250,           # Bilancio ideale: né troppo pochi (underfit) né troppi (lenti)
