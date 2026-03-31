@@ -23,7 +23,21 @@ def get_model(model_name, seed):
     elif model_name == 'knn':
         return KNeighborsClassifier(n_neighbors=5, weights='distance')
     elif model_name == 'xgboost':
-        return XGBClassifier(n_estimators=100, max_depth=3, random_state=seed, eval_metric='mlogloss', tree_method='hist', n_jobs=-1)
+        return XGBClassifier(# --- PERFORMANCE E VELOCITÀ ---
+            n_estimators=250,           # Bilancio ideale: né troppo pochi (underfit) né troppi (lenti)
+            learning_rate=0.08,         # Abbastanza basso per precisione, abbastanza alto per convergere
+            tree_method='hist',         # FONDAMENTALE: usa gli istogrammi (velocità 10x)
+            max_bin=256,                # Velocizza il calcolo riducendo i "cestini" delle feature
+            
+            # --- ROBUSTEZZA OOD (Evita Overfitting) ---
+            max_depth=5,                # Profondità media: cattura i pattern senza "imparare a memoria"
+            subsample=0.8,              # Usa l'80% dei dati per albero (riduce rumore e accelera)
+            colsample_bytree=0.8,       # Usa l'80% delle feature per albero (fondamentale per i 10 pacchetti)
+            
+            # --- REGOLARIZZAZIONE ---
+            gamma=1,                    # Impedisce split di rami se il guadagno è minimo (pulisce il rumore)
+            random_state=seed,
+            eval_metric='mlogloss')
     else:
         raise ValueError(f"Model {model_name} not supported.")
 
@@ -38,7 +52,7 @@ def train_and_evaluate_model(X_train_data, y_train_data, X_test_ext, y_test_ext,
     class_names = label_encoder.classes_
 
     # 2. CONFIGURAZIONE DELLA CROSS-VALIDATION
-    kf = KFold(n_splits=3, shuffle=True, random_state=seed) #4 parti per train e una per test
+    kf = KFold(n_splits=5, shuffle=True, random_state=seed) #4 parti per train e una per test
     results_report = [] #per salvare i risultati di ogni fold
     cm_internal_list = [] #per test fatti sulla stessa location di train
     cm_external_list = [] #per test fatti su location diversa da quella di train

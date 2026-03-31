@@ -1,23 +1,23 @@
 ,mean,std,Type,mean_ext,std_ext
-f1_ID,80.04,0.91,Global Metric (%),,
-bal_acc_ID,79.45,0.91,Global Metric (%),,
-f1_OOD_or_JD,95.11,0.14,Global Metric (%),,
-bal_acc_OOD_or_JD,94.9,0.19,Global Metric (%),,
-Aliexpress,77.73,4.03,Per Class Accuracy (%),95.08,1.13
-Amazon,86.47,1.72,Per Class Accuracy (%),96.89,0.4
-Discord,85.79,1.91,Per Class Accuracy (%),97.16,0.42
-Duolingo,93.18,0.93,Per Class Accuracy (%),97.94,0.2
-Facebook,73.92,1.76,Per Class Accuracy (%),94.78,0.6
-Instagram,76.61,4.1,Per Class Accuracy (%),95.33,0.78
-Reddit,83.54,1.03,Per Class Accuracy (%),96.28,0.19
-Shein,75.52,2.84,Per Class Accuracy (%),94.22,0.77
-Snapchat,71.75,3.97,Per Class Accuracy (%),93.7,1.25
-SoundCloud,79.57,2.08,Per Class Accuracy (%),95.91,0.47
-Spotify,53.44,7.11,Per Class Accuracy (%),86.1,0.92
-Subito,69.89,1.38,Per Class Accuracy (%),93.42,0.32
-Temu,76.3,3.18,Per Class Accuracy (%),90.35,0.57
-Threads,68.2,4.58,Per Class Accuracy (%),93.63,1.15
-TikTok,91.53,0.33,Per Class Accuracy (%),96.68,0.07
-Twitch,94.51,0.82,Per Class Accuracy (%),98.33,0.11
-Youtube,86.81,1.79,Per Class Accuracy (%),95.61,0.31
-YoutubeMusic,85.36,1.2,Per Class Accuracy (%),96.87,0.43
+f1_ID,81.39,0.92,Global Metric (%),,
+bal_acc_ID,80.4,0.85,Global Metric (%),,
+f1_OOD_or_JD,95.8,0.22,Global Metric (%),,
+bal_acc_OOD_or_JD,95.45,0.25,Global Metric (%),,
+Aliexpress,79.91,4.29,Per Class Accuracy (%),95.93,1.15
+Amazon,87.33,2.59,Per Class Accuracy (%),97.21,0.6
+Discord,88.01,1.72,Per Class Accuracy (%),97.62,0.29
+Duolingo,94.56,0.84,Per Class Accuracy (%),98.66,0.2
+Facebook,74.13,3.0,Per Class Accuracy (%),94.8,0.85
+Instagram,72.06,3.01,Per Class Accuracy (%),94.43,0.45
+Reddit,86.32,2.27,Per Class Accuracy (%),97.02,0.33
+Shein,75.74,3.06,Per Class Accuracy (%),94.46,1.0
+Snapchat,71.82,3.45,Per Class Accuracy (%),94.21,1.24
+SoundCloud,80.43,0.91,Per Class Accuracy (%),95.9,0.4
+Spotify,56.44,3.79,Per Class Accuracy (%),88.4,1.22
+Subito,73.44,1.31,Per Class Accuracy (%),94.11,0.57
+Temu,79.02,3.79,Per Class Accuracy (%),91.74,0.65
+Threads,67.97,4.12,Per Class Accuracy (%),93.57,1.13
+TikTok,93.63,0.61,Per Class Accuracy (%),98.57,0.14
+Twitch,95.11,0.76,Per Class Accuracy (%),98.75,0.13
+Youtube,86.59,1.6,Per Class Accuracy (%),95.86,0.31
+YoutubeMusic,84.77,1.92,Per Class Accuracy (%),96.79,0.68
