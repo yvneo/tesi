@@ -1,0 +1,5 @@
+Feature_Group,Total_Importance_Mean
+L4_payload_length,0.28719953
+iat_micros,0.14571065
+packet_dir,0.24957632
+TCP_win_size,0.31751359

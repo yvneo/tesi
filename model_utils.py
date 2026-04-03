@@ -19,22 +19,24 @@ import os
 
 def get_model(model_name, seed):
     if model_name == 'rf':
-        return RandomForestClassifier(n_estimators=100, random_state=seed, class_weight='balanced')
+        return RandomForestClassifier(n_estimators=100, 
+                                    random_state=seed, 
+                                    class_weight='balanced')
     elif model_name == 'knn':
-        return KNeighborsClassifier(n_neighbors=20, metric = 'manhattan', weights='distance')
+        return KNeighborsClassifier(n_neighbors=20, 
+                                    metric = 'manhattan', 
+                                    weights='distance')
     elif model_name == 'xgboost':
-        return XGBClassifier(# --- PERFORMANCE E VELOCITÀ ---
-            n_estimators=250,           # Bilancio ideale: né troppo pochi (underfit) né troppi (lenti)
+        return XGBClassifier(
+            n_estimators=250,           # Bilancio ideale
             learning_rate=0.08,         # Abbastanza basso per precisione, abbastanza alto per convergere
-            tree_method='hist',         # FONDAMENTALE: usa gli istogrammi (velocità 10x)
-            max_bin=256,                # Velocizza il calcolo riducendo i "cestini" delle feature
+            tree_method='hist',         # FONDAMENTALE: usa gli istogrammi 
+            max_bin=256,                # Velocizza il calcolo riducendo i "cestini" delle feature, standard per hist
             
-            # --- ROBUSTEZZA OOD (Evita Overfitting) ---
             max_depth=5,                # Profondità media: cattura i pattern senza "imparare a memoria"
             subsample=0.8,              # Usa l'80% dei dati per albero (riduce rumore e accelera)
             colsample_bytree=0.8,       # Usa l'80% delle feature per albero (fondamentale per i 10 pacchetti)
             
-            # --- REGOLARIZZAZIONE ---
             gamma=1,                    # Impedisce split di rami se il guadagno è minimo (pulisce il rumore)
             random_state=seed,
             eval_metric='mlogloss')
@@ -60,6 +62,8 @@ def train_and_evaluate_model(X_train_data, y_train_data, X_test_ext, y_test_ext,
     #definisco i gruppi di feature per lo scaling: L4_payload_lenght, iat_micros, packet_dir, TCP_win_size
     feature_groups =[range(0, num_packets), range(num_packets, num_packets*2), range(num_packets*2, num_packets*3), range(num_packets*3, num_packets*4)]
 
+    fold_importances = [] #per salvare l'importanza delle feature in ogni fold, solo per rf e xgboost
+
     for fold, (train_index, test_index) in enumerate(kf.split(X_train_data)):
         
         #divido i dati in train e validazione val per questo fold
@@ -74,11 +78,11 @@ def train_and_evaluate_model(X_train_data, y_train_data, X_test_ext, y_test_ext,
 
         for group in feature_groups:
             scaler = MinMaxScaler()
-            # Trasformiamo il gruppo in un'unica colonna gigante per calcolare Min/Max globali del gruppo
+            # Trasformo il gruppo in un'unica colonna gigante per calcolare Min/Max globali del gruppo
             train_group = X_train[:, group]
             scaler.fit(train_group.reshape(-1, 1))
             
-            # Applichiamo la trasformazione all'intero blocco di colonne in un colpo solo!
+            # Applico la trasformazione all'intero blocco di colonne 
             X_train_scaled[:, group] = scaler.transform(train_group.reshape(-1, 1)).reshape(train_group.shape)
             X_val_scaled[:, group] = scaler.transform(X_val[:, group].reshape(-1, 1)).reshape(X_val[:, group].shape)
             X_ext_scaled[:, group] = scaler.transform(X_test_ext[:, group].reshape(-1, 1)).reshape(X_test_ext[:, group].shape)
@@ -86,6 +90,11 @@ def train_and_evaluate_model(X_train_data, y_train_data, X_test_ext, y_test_ext,
         # 4. ADDDESTRAMENTO MODELLO
         model = get_model(model_type, seed)
         model.fit(X_train_scaled, y_train)
+
+        #salvo importanza feature solo per rf e xgboost
+        if model_type in ['rf', 'xgboost']:
+            importances = model.feature_importances_
+            fold_importances.append(importances) #array che mi dice quanto ogni feature ha contribuito alla decisione del modello in questo fold
 
         # 5. PREDIZIONI
         y_pred_int = model.predict(X_val_scaled) #test su stessa location di train
@@ -114,6 +123,33 @@ def train_and_evaluate_model(X_train_data, y_train_data, X_test_ext, y_test_ext,
         
     # 8. REPoRT E VISUALIZZAZIONE
     df_report = pd.DataFrame(results_report)
+
+    #calcolo media delle importanze delle feature nei 5 fold, solo per rf e xgboost
+    if model_type in ['rf', 'xgboost'] and len(fold_importances) > 0:
+        avg_importances = np.mean(fold_importances, axis=0) #media delle importanze 
+        
+        feature_names = ([f'L4_payload_length_{i}' for i in range(num_packets)] +
+                            [f'iat_micros_{i}' for i in range(num_packets)] +   
+                            [f'packet_dir_{i}' for i in range(num_packets)] +
+                            [f'TCP_win_size_{i}' for i in range(num_packets)])
+        
+        #creo csv dettagliato per pacchetto 
+        df_feat_imp = pd.DataFrame({
+            'Feature': feature_names,
+            'Importance_Mean': avg_importances,
+            'Importance_Std': np.std(fold_importances, axis=0)
+        }).sort_values(by='Importance_Mean', ascending=False) #da più importante a meno importante
+        df_feat_imp.to_csv(f"risultati/{model_type}/{num_packets}/feature_importance_{scenario_name}.csv", index=False)
+
+        #creo csv aggregato per gruppo di feature
+        group_importances = {
+            'L4_payload_length': np.sum(avg_importances[0:num_packets]),
+            'iat_micros': np.sum(avg_importances[num_packets:2*num_packets]),
+            'packet_dir': np.sum(avg_importances[2*num_packets:3*num_packets]),
+            'TCP_win_size': np.sum(avg_importances[3*num_packets:4*num_packets])
+        }
+        df_group_imp = pd.DataFrame(list(group_importances.items()), columns=['Feature_Group', 'Total_Importance_Mean'])
+        df_group_imp.to_csv(f"risultati/{model_type}/{num_packets}/feature_importance_groups_{scenario_name}.csv", index=False)
 
     #calcolo media e deviazione standard 
     numeric_cols = df_report.select_dtypes(include=[np.number]).drop(columns=['fold'])
