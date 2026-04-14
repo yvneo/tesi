@@ -28,7 +28,7 @@ def plot_combined_importance(model_type, num_packets):
     if all_data:
         combined_df = pd.concat(all_data)
         g = sns.FacetGrid(combined_df, col="Scenario", col_wrap=3, height=4, hue="Feature", aspect=1.2)
-        g.map(sns.lineplot, "Packet_Index", "Importance", marker="o")
+        g.map(sns.lineplot, "Packet", "Importance", marker="o")
         g.add_legend()
         g.set_titles("{col_name}")
         g.set_axis_labels("Packet Index", "Average Importance")
@@ -69,6 +69,9 @@ def perform_comparative_analysis_ttest(model_a, model_b, windows, scenarios):
 
 
 for model in MODELS:
-    generate_heatmap_feature_usage(model)
+    for num_packets in WINDOWS:
+        plot_combined_importance(model, num_packets)
+plot_combined_importance('knn', 10) #esempio per RF con 20 pacchetti
+
 report = perform_comparative_analysis_ttest('rf', 'xgboost', WINDOWS, SCENARIOS_FOR_TTEST)
 print(report)

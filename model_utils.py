@@ -95,15 +95,15 @@ def train_and_evaluate_model(X_train_data, y_train_data, X_test_ext, y_test_ext,
         #CAMPIONAMENTO BILANCIATO PER SAGE 
         df_temp = pd.DataFrame(X_train_scaled)
         df_temp['label'] = y_train
-        samples_per_class = 25 
+        samples_per_class = 25
         balanced_samples = df_temp.groupby('label').apply(lambda x: x.sample(n = min(len(x), samples_per_class), replace=True, random_state=seed)).reset_index(drop=True)
         X_train_balanced_samples = balanced_samples.drop(columns=['label']).values
         
         #utilizzo sage per calcolare l'importanza delle feature 
         imputer = sage.MarginalImputer(model, X_train_balanced_samples) #utilizzo campioni bilanciati per calcolare importanza delle feature, soprattutto per xgboost che è molto lento con molti campioni
         estimator = sage.PermutationEstimator(imputer)
-        n_samples = min(100, len(X_val_scaled)) #limito il numero di campioni per velocizzare il calcolo, soprattutto con xgboost   
-        sage_values = estimator(X_val_scaled[:n_samples], y_val[: n_samples], n_permutations=30, thresh = 0.05) #calcolo importanza delle feature con 10 permutazioni, bilanciando accuratezza e tempo di calcolo
+        n_samples = min(15, len(X_val_scaled)) #limito il numero di campioni per velocizzare il calcolo, soprattutto con xgboost   
+        sage_values = estimator(X_val_scaled[:n_samples], y_val[: n_samples], n_permutations=10, thresh = 0.08, detect_convergence = False) #calcolo importanza delle feature con 10 permutazioni, bilanciando accuratezza e tempo di calcolo
         fold_importances.append(sage_values.values) #salvo importanza delle feature per questo fold, solo per rf e xgboost
         
         # 5. PREDIZIONI
