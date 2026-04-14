@@ -15,6 +15,7 @@ import random
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import sage 
 import os
 
 def get_model(model_name, seed):
@@ -91,11 +92,20 @@ def train_and_evaluate_model(X_train_data, y_train_data, X_test_ext, y_test_ext,
         model = get_model(model_type, seed)
         model.fit(X_train_scaled, y_train)
 
-        #salvo importanza feature solo per rf e xgboost
-        if model_type in ['rf', 'xgboost']:
-            importances = model.feature_importances_
-            fold_importances.append(importances) #array che mi dice quanto ogni feature ha contribuito alla decisione del modello in questo fold
-
+        #CAMPIONAMENTO BILANCIATO PER SAGE 
+        df_temp = pd.DataFrame(X_train_scaled)
+        df_temp['label'] = y_train
+        samples_per_class = 25 
+        balanced_samples = df_temp.groupby('label').apply(lambda x: x.sample(n = min(len(x), samples_per_class), replace=True, random_state=seed)).reset_index(drop=True)
+        X_train_balanced_samples = balanced_samples.drop(columns=['label']).values
+        
+        #utilizzo sage per calcolare l'importanza delle feature 
+        imputer = sage.MarginalImputer(model, X_train_balanced_samples) #utilizzo campioni bilanciati per calcolare importanza delle feature, soprattutto per xgboost che è molto lento con molti campioni
+        estimator = sage.PermutationEstimator(imputer)
+        n_samples = min(100, len(X_val_scaled)) #limito il numero di campioni per velocizzare il calcolo, soprattutto con xgboost   
+        sage_values = estimator(X_val_scaled[:n_samples], y_val[: n_samples], n_permutations=30, thresh = 0.05) #calcolo importanza delle feature con 10 permutazioni, bilanciando accuratezza e tempo di calcolo
+        fold_importances.append(sage_values.values) #salvo importanza delle feature per questo fold, solo per rf e xgboost
+        
         # 5. PREDIZIONI
         y_pred_int = model.predict(X_val_scaled) #test su stessa location di train
         y_pred_ext = model.predict(X_ext_scaled) #test su location diversa da quella di train
@@ -124,33 +134,17 @@ def train_and_evaluate_model(X_train_data, y_train_data, X_test_ext, y_test_ext,
     # 8. REPoRT E VISUALIZZAZIONE
     df_report = pd.DataFrame(results_report)
 
-    #calcolo media delle importanze delle feature nei 5 fold, solo per rf e xgboost
-    if model_type in ['rf', 'xgboost'] and len(fold_importances) > 0:
-        avg_importances = np.mean(fold_importances, axis=0) #media delle importanze 
-        
-        feature_names = ([f'L4_payload_length_{i}' for i in range(num_packets)] +
-                            [f'iat_micros_{i}' for i in range(num_packets)] +   
-                            [f'packet_dir_{i}' for i in range(num_packets)] +
-                            [f'TCP_win_size_{i}' for i in range(num_packets)])
-        
-        #creo csv dettagliato per pacchetto 
-        df_feat_imp = pd.DataFrame({
-            'Feature': feature_names,
-            'Importance_Mean': avg_importances,
-            'Importance_Std': np.std(fold_importances, axis=0)
-        }).sort_values(by='Importance_Mean', ascending=False) #da più importante a meno importante
-        df_feat_imp.to_csv(f"risultati/{model_type}/{num_packets}/feature_importance_{scenario_name}.csv", index=False)
-
-        #creo csv aggregato per gruppo di feature
-        group_importances = {
-            'L4_payload_length': np.sum(avg_importances[0:num_packets]),
-            'iat_micros': np.sum(avg_importances[num_packets:2*num_packets]),
-            'packet_dir': np.sum(avg_importances[2*num_packets:3*num_packets]),
-            'TCP_win_size': np.sum(avg_importances[3*num_packets:4*num_packets])
-        }
-        df_group_imp = pd.DataFrame(list(group_importances.items()), columns=['Feature_Group', 'Total_Importance_Mean'])
-        df_group_imp.to_csv(f"risultati/{model_type}/{num_packets}/feature_importance_groups_{scenario_name}.csv", index=False)
-
+    if len(fold_importances) > 0:
+        avg_importances = np.mean(fold_importances, axis=0)
+        feature_data = []
+        for i in range(num_packets): 
+            feature_data.append({'Feature': 'L4_payload', 'Packet': i+1, 'Importance': avg_importances[i]})
+            feature_data.append({'Feature': 'iat_micros', 'Packet': i+1, 'Importance': avg_importances[i + num_packets]})
+            feature_data.append({'Feature': 'packet_dir', 'Packet': i+1, 'Importance': avg_importances[i + num_packets*2]})
+            feature_data.append({'Feature': 'TCP_win_size', 'Packet': i+1, 'Importance': avg_importances[i + num_packets*3]})
+        df_importance = pd.DataFrame(feature_data)
+        df_importance.to_csv(f"risultati/{model_type}/{num_packets}/feature_importance_{scenario_name}.csv", index=False)
+    
     #calcolo media e deviazione standard 
     numeric_cols = df_report.select_dtypes(include=[np.number]).drop(columns=['fold'])
     stats = numeric_cols.agg(['mean', 'std']).T

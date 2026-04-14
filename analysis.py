@@ -16,30 +16,26 @@ SCENARIOS = ['Home_vs_Home', 'Home_vs_UniVR',
 SCENARIOS_FOR_TTEST = ['home_to_home', 'home_to_univr', 
     'univr_to_univr', 'univr_to_home', 'jd_to_univr', 'jd_to_home']
 
-def generate_heatmap_feature_usage(model):
-    data = []
-    for w in WINDOWS:
-        for s in SCENARIOS:
-            path = f'risultati/{model}/{w}/feature_importance_groups_{s}.csv'
-            if os.path.exists(path):
-                df = pd.read_csv(path)
-                df['Window'] = w
-                df['Scenario'] = s
-                data.append(df)
+def plot_combined_importance(model_type, num_packets):
+    all_data = []
+    for scenario in SCENARIOS:
+        path = f'risultati/{model_type}/{num_packets}/feature_importance_{scenario}.csv'
+        if os.path.exists(path):
+            df = pd.read_csv(path)
+            df['Scenario'] = scenario
+            all_data.append(df)
 
-    df = pd.concat(data)
-    df['Feature_Window'] = df['Feature_Group'] + ' (W=' + df['Window'].astype(str) + ')'
-    pivot = df.pivot_table(index='Feature_Window', columns='Scenario', values='Total_Importance_Mean')
-    pivot = pivot[[s for s in SCENARIOS if s in pivot.columns]]
-
-    plt.figure(figsize=(14, 8))
-    sns.heatmap(pivot, annot=True, cmap='YlGnBu', fmt = '.2f', linewidths =0.5, cbar_kws={'label': 'Mean Total Importance'})
-    plt.title(f'Global Feature Importance Summary - {model.upper()}', fontsize=16, pad=20)
-    plt.xlabel('Scenario', fontsize=12)
-    plt.ylabel('Feature Group (Window Size)', fontsize=12)
-    plt.xticks(rotation=30, ha='right')
-    plt.savefig(f'grafici/analisi_feature/global_heatmap_{model}.png', bbox_inches='tight', dpi =300)
-    plt.show()
+    if all_data:
+        combined_df = pd.concat(all_data)
+        g = sns.FacetGrid(combined_df, col="Scenario", col_wrap=3, height=4, hue="Feature", aspect=1.2)
+        g.map(sns.lineplot, "Packet_Index", "Importance", marker="o")
+        g.add_legend()
+        g.set_titles("{col_name}")
+        g.set_axis_labels("Packet Index", "Average Importance")
+        plt.subplots_adjust(top=0.9)
+        g.fig.suptitle(f'Feature Importance Across Scenarios: {model_type} - {num_packets} Packets', fontsize=16)
+        plt.savefig(f"grafici/{model_type}/{num_packets}/combined_feature_importance.png", dpi=300, bbox_inches='tight')
+        plt.show()
 
 def perform_comparative_analysis_ttest(model_a, model_b, windows, scenarios):
     results = []
