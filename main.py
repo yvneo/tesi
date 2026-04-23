@@ -12,7 +12,7 @@ SEED = 42
 np.random.seed(SEED)
 random.seed(SEED)
 NUM_PACKETS = 20
-MODEL_TYPE = 'knn' # 'rf', 'knn', 'xgboost'
+MODEL_TYPE = 'xgboost' # 'rf', 'knn', 'xgboost'
 DATASET_PATH = "/storage_14tb/workspace_idio/UniVR_Data/dataset_df_exact_no0load_saturated_handshake_tail_no0loadFilter_extended_94bde95_7e0dbc17/"
 
 print("--- FASE 1: Caricamento Dati ---")
@@ -46,9 +46,9 @@ all_results = [] #per salvare i risultati di tutti gli scenari
 def collect_results(df, location_name, label):
     for _, row in df.iterrows():
         all_results.append({
-            'Test Location': location_name,
+            'Location': location_name,
             'Scenario': label,
-            'F1 Score': row['f1_OOD_or_JD'] if label != 'ID' else row['f1_ID']
+            'F1 Score': row['f1_OOD_or_JD'] 
         })
 
 #1. addestramento su Home, test su Home
@@ -86,7 +86,7 @@ report_jd_to_home.to_csv(f"risultati/{MODEL_TYPE}/{NUM_PACKETS}/report_jd_to_hom
 #GENERO BARPLOT FINALE 
 final_plot_df = pd.DataFrame(all_results)
 plt.figure(figsize=(10, 6))
-sns.barplot(data=final_plot_df, x='Test Location', y='F1 Score', hue='Scenario', capsize=0.1, errorbar='sd')
+sns.barplot(data=final_plot_df, x='Location', y='F1 Score', hue='Scenario', capsize=0.1, errorbar='sd')
 plt.title('Valutazione Cross-Domain: ID vs OOD vs JD')
 plt.ylabel('F1 Score (%)')
 plt.ylim(0, 105)
