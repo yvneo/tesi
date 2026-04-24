@@ -71,7 +71,6 @@ def perform_comparative_analysis_ttest(model_a, model_b, windows, scenarios):
 for model in MODELS:
     for num_packets in WINDOWS:
         plot_combined_importance(model, num_packets)
-plot_combined_importance('knn', 10) #esempio per RF con 20 pacchetti
 
 report = perform_comparative_analysis_ttest('rf', 'xgboost', WINDOWS, SCENARIOS_FOR_TTEST)
 print(report)
