@@ -10,17 +10,16 @@ import os
 
 
 def load_and_split_data(DATASET_PATH):
-    #creo il persorso completo per ogni file .parquet presente nella cartella
+    #genera la lista dei percorsi completi per tutti i file .parquet presenti nella directory specificata da DATASET_PATH
     all_files = [os.path.join(DATASET_PATH, f) for f in os.listdir(DATASET_PATH) if f.endswith('.parquet')]
     
-    #leggo tutti i file e li concateno in un unico DataFrame
+    #converte ogni file .parquet in un DataFrame e li concatena in un unico DataFrame globale
     df_list = [pd.read_parquet(file) for file in all_files] #leggo ogni file e lo trasformo in tabella 
     df = pd.concat(df_list, ignore_index=True) #concateno tutte le tabelle in un unico DataFrame
     
-    #divido il dataset in due sottoinsiemi basati sulla colonna 'Where'
-    #copy per evitare avvisi di SettingWithCopyWarning quando si lavora con i sottoinsiemi del DataFrame
-    df_home = df[df['Where'] == 'Home 1'].copy()  # Location A
-    df_univr = df[df['Where'] == 'UniVR'].copy()  # Location B
+    #partiziona il dataset in due sotto-insiemi distinti in base alla colonna Where: Home1 (indicata come Location A) e UniVR (indicata come Location B)
+    df_home = df[df['Where'] == 'Home 1'].copy()  
+    df_univr = df[df['Where'] == 'UniVR'].copy()  
 
     return df_home, df_univr
 

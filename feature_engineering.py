@@ -1,37 +1,38 @@
 #INGEGNERIZZAZIONE DELLE FEAUTURE E RAPPRESENTAZIONE DELL'INPUT 
-#primi 10 pacchetti di ciascun biflusso 
-#per ognni pacchetto, estraggo 4 feauture: L4_payload_lenght, iat_micros, packet_dir e TCP_win_size
-#flussi < 10 pacchetti sistemati con zero padding
-#risultato array numpy con N righe e 40 colonne 
+#trasforma i biflussi in formato tabellare NumPy. Per ogni biflusso vengono estratti i primi N pacchetti, e per ciascun pacchetto vengono selezionati 4 campi:
+#L4_payload_bytes_dir, iat_micros, packet_dir, BF_TCP_win_size_dir.
+#Se un biflusso contiene meno di N pacchetti, i campi mancanti vengono riempiti con zero (o 0.5 per packet_dir).
 
 import numpy as np
 def extract_features(df, num_packets):
-    features_list = [] #contiene righe da 40 numeri
-    labels_list = [] #contiene etichette 
+    features_list = [] #ospita i vettori finali (con 40/80 elementi ciasuno)
+    labels_list = [] #ospita le etichette di classificazione 
     
-    #itero su ogni riga (biflusso) 
+    #iterazione su ogni biflusso presente del DataFrame 
     for _, row in df.iterrows():
-        #estraggo 4 campi richiesti per i primi 10 pacchetti
+
+        #estrazione delle 4 feature target limitate ai primi N pacchetti
         pl = row['L4_payload_bytes_dir'][:num_packets]
         iat = row['iat_micros'][:num_packets]
         dire = row['packet_dir'][:num_packets]
         win = row['BF_TCP_win_size_dir'][:num_packets]
 
-        #creo vettore di 10 zeri per il padding
+        #inizializzazione dei vettori di padding con valori neautri (zero o 0.5 per direzione)
         pl_padded = np.zeros(num_packets)
         iat_padded = np.zeros(num_packets)
         dire_padded = np.full(num_packets, 0.5)
         win_padded = np.zeros(num_packets)
 
-        #riempio i vettori con i valori estratti, lasciando zero per quelli mancanti
+        #inserimento dei dati estratti nei vettori preallocati
         pl_padded[:len(pl)] = pl
         iat_padded[:len(iat)] = iat
         dire_padded[:len(dire)] = dire
         win_padded[:len(win)] = win 
 
-        #concateno le feauture in un unico vettore di 40 elementi
+        #concatenazione delle feature in un unico vettore riga 
         row_features = np.concatenate([pl_padded, iat_padded, dire_padded, win_padded])
         features_list.append(row_features)
         labels_list.append(row['BF_label']) 
     
+    #ritorna i dati in formato NumPy array, pronti per essere utilizzati come input per i modelli di machine learning
     return np.array(features_list), np.array(labels_list)

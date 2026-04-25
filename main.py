@@ -11,7 +11,7 @@ import os
 SEED = 42
 np.random.seed(SEED)
 random.seed(SEED)
-NUM_PACKETS = 20
+NUM_PACKETS = 20 # 10 o 20 
 MODEL_TYPE = 'xgboost' # 'rf', 'knn', 'xgboost'
 DATASET_PATH = "/storage_14tb/workspace_idio/UniVR_Data/dataset_df_exact_no0load_saturated_handshake_tail_no0loadFilter_extended_94bde95_7e0dbc17/"
 
@@ -29,8 +29,8 @@ print(f"Matrice UniVR. Forma: {X_univr.shape}")
 
 print("\n--- FASE 3: Addestramento e Valutazione Modello ---")
 
-#garantisco che il modello sia testato e addestrato su stesse applicazioni in entrambe location
-common_classes = np.intersect1d(np.unique(y_home), np.unique(y_univr)) #intersezione 
+#garantisco che il modello sia testato e addestrato su stesse applicazioni in entrambe location usando intersezione 
+common_classes = np.intersect1d(np.unique(y_home), np.unique(y_univr))  
 
 filter_home = np.isin(y_home, common_classes)
 filter_univr = np.isin(y_univr, common_classes)
@@ -83,7 +83,7 @@ report_jd_to_home = train_and_evaluate_model(X_combined, y_combined, X_home_filt
 collect_results(report_jd_to_home, location_name="Home", label="JD")
 report_jd_to_home.to_csv(f"risultati/{MODEL_TYPE}/{NUM_PACKETS}/report_jd_to_home.csv", index=False)    
 
-#GENERO BARPLOT FINALE 
+#generazione barplot finale 
 final_plot_df = pd.DataFrame(all_results)
 plt.figure(figsize=(10, 6))
 sns.barplot(data=final_plot_df, x='Location', y='F1 Score', hue='Scenario', capsize=0.1, errorbar='sd')
