@@ -142,18 +142,40 @@ def train_and_evaluate_model(X_train_data, y_train_data, X_test_ext, y_test_ext,
     # 9. AGGREGAZIONE RISULTATI E SALVATAGGIO REPORT
     df_report = pd.DataFrame(results_report)
 
-    #elaborazione importanza feature media tra tutti i fold e salvataggio in CSV per visualizzazione successiva
+    #salvataggio importanza delle feature per questo scenario, con formato adatto per visualizzazione con barplot 
     if len(fold_importances) > 0:
-        avg_importances = np.mean(fold_importances, axis=0)
         feature_data = []
-        for i in range(num_packets): 
-            feature_data.append({'Feature': 'L4_payload', 'Packet': i+1, 'Importance': avg_importances[i]})
-            feature_data.append({'Feature': 'iat_micros', 'Packet': i+1, 'Importance': avg_importances[i + num_packets]})
-            feature_data.append({'Feature': 'packet_dir', 'Packet': i+1, 'Importance': avg_importances[i + num_packets*2]})
-            feature_data.append({'Feature': 'TCP_win_size', 'Packet': i+1, 'Importance': avg_importances[i + num_packets*3]})
-        df_importance = pd.DataFrame(feature_data)
-        df_importance.to_csv(f"risultati/{model_type}/{num_packets}/feature_importance_{scenario_name}.csv", index=False)
+
+        for f, imp in enumerate(fold_importances):
+            for i in range(num_packets):
+                feature_data.append({
+                    "Fold": f, 
+                    "Feature": "L4_payload", 
+                    "Packet": i+1,
+                    "Importance": imp[i]
+                })
+                feature_data.append({
+                    "Fold": f,
+                    "Feature": "iat_micros",
+                    "Packet": i+1,
+                    "Importance": imp[i + num_packets]
+                })
+                feature_data.append({
+                    "Fold": f,
+                    "Feature": "packet_dir",
+                    "Packet": i+1,
+                    "Importance": imp[i + num_packets*2]
+                })
+                feature_data.append({
+                    "Fold": f,
+                    "Feature": "TCP_win_size",
+                    "Packet": i+1,
+                    "Importance": imp[i + num_packets*3]
+                })
     
+        df_importance = pd.DataFrame(feature_data)
+        df_importance.to_csv(f'risultati/{model_type}/{num_packets}/feature_importance_{scenario_name}.csv', index=False)
+
     #calcolo statistiche globali (media e deviazione standard) 
     numeric_cols = df_report.select_dtypes(include=[np.number]).drop(columns=['fold'])
     stats = numeric_cols.agg(['mean', 'std']).T

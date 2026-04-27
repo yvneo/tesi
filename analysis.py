@@ -18,7 +18,11 @@ SCENARIOS_FOR_TTEST = ['home_to_home', 'home_to_univr',
 
 def plot_combined_importance(model_type, num_packets):
 
-    """funzione per visualizzare in un unico grafico l'andamento dell'importanza media di ciascuna feature nei 6 scenari, per un dato modello e numero di pacchetti"""
+    """funzione che crea barplot dell'importanza delle feature: 
+    - un subplot per ogni feature
+    - importanza media con barre di errore 
+    - indice pacchetto sull'asse x
+    - differenza tra scenari evidenziata da colori diversi"""
 
     all_data = []
 
@@ -33,20 +37,30 @@ def plot_combined_importance(model_type, num_packets):
     if all_data:
         combined_df = pd.concat(all_data)
 
-        #inizializzazione della grgiglia 
-        g = sns.FacetGrid(combined_df, col="Scenario", col_wrap=3, height=4, hue="Feature", aspect=1.2)
+        sns.set_theme(style="whitegrid")
 
-        #rappresentazione tramite lineplot per evidenziare sequenzialità
-        g.map(sns.lineplot, "Packet", "Importance", marker="o")
-
-        g.add_legend()
+        g = sns.catplot(data = combined_df, 
+                        kind = 'bar',
+                        x = 'Packet',
+                        y = 'Importance',
+                        hue = 'Scenario',
+                        col = 'Feature',
+                        col_wrap = 2,
+                        height = 5,
+                        aspect = 1.5,
+                        errorbar = 'sd',
+                        palette = "muted")
+        g.set_axis_labels("Packet Index", "Average Importance (Log Scale)")
         g.set_titles("{col_name}")
-        g.set_axis_labels("Packet Index", "Average Importance")
-        plt.subplots_adjust(top=0.9)
-        g.fig.suptitle(f'Feature Importance Across Scenarios: {model_type} - {num_packets} Packets', fontsize=16)
+        g.despine(left=True)
 
-        plt.savefig(f"grafici/{model_type}/{num_packets}/combined_feature_importance.png", dpi=300, bbox_inches='tight')
-        plt.show()
+        for ax in g.axes.flat: #utilizzo scala logaritmica per evidenziare meglio le differenze tra feature con importanza molto diversa
+            ax.set_yscale('log')
+
+        plt.subplots_adjust(top=0.9)
+        g.fig.suptitle(f"Feature Importance for {model_type.upper()} - Window {num_packets} Packets", fontsize=16)
+
+        plt.savefig(f'grafici/{model_type}/{num_packets}/combined_feature_importance.png')
 
 def perform_comparative_analysis_ttest(model_a, model_b, windows, scenarios):
 
@@ -88,4 +102,3 @@ for model in MODELS:
 plot_combined_importance('knn', 10)
 
 report = perform_comparative_analysis_ttest('rf', 'xgboost', WINDOWS, SCENARIOS_FOR_TTEST)
-print(report)

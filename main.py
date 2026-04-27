@@ -11,7 +11,7 @@ import os
 SEED = 42
 np.random.seed(SEED)
 random.seed(SEED)
-NUM_PACKETS = 20 # 10 o 20 
+NUM_PACKETS = 10 # 10 o 20 
 MODEL_TYPE = 'xgboost' # 'rf', 'knn', 'xgboost'
 DATASET_PATH = "/storage_14tb/workspace_idio/UniVR_Data/dataset_df_exact_no0load_saturated_handshake_tail_no0loadFilter_extended_94bde95_7e0dbc17/"
 
