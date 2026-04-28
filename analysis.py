@@ -49,6 +49,8 @@ def plot_combined_importance(model_type, num_packets):
                         height = 5,
                         aspect = 1.5,
                         errorbar = 'sd',
+                        errwidth = 1.5,
+                        capsize = 0.2,
                         palette = "muted")
         g.set_axis_labels("Packet Index", "Average Importance (Log Scale)")
         g.set_titles("{col_name}")
@@ -101,4 +103,4 @@ for model in MODELS:
         plot_combined_importance(model, num_packets)
 plot_combined_importance('knn', 10)
 
-report = perform_comparative_analysis_ttest('rf', 'xgboost', WINDOWS, SCENARIOS_FOR_TTEST)
+#report = perform_comparative_analysis_ttest('rf', 'xgboost', WINDOWS, SCENARIOS_FOR_TTEST)
