@@ -1,30 +1,20 @@
-Overview
-This project was developed as part of my Bachelor's thesis and focuses on analyzing real-world traffic data using machine learning techniques.
-The goal is to identify which model best captures traffic patterns and behaviors.
+# Analisi della Robustezza di Modelli di ML per la Network Traffic Classification 
 
-Dataset
-Real-world data collected during internship
-Includes traffic-related features (you can specify if you want 👀)
-Preprocessed for training and evaluation
+Benvenuti nella repository dedicata al codice e agli esperimenti della mia tesi di laurea in Informatica presso l'**Università degli Studi di Verona**.
 
-Methods
-The following models were trained and compared:
-Random Forest
-K-Nearest Neighbors (KNN)
-XGBoost
+##  Progetto
+L'obiettivo di questo lavoro è analizzare la **robustezza**, la **spiegabilità** e la **sostenibilità** dei modelli di Machine Learning applicati alla classificazione del traffico di rete, con un focus particolare sugli scenari **Cross-Location** (quando il modello viene addestrato in un luogo e testato in un altro).
 
-Models were evaluated using:
-Balanced Accuracy 
-F1 Score 
+###  Focus della Ricerca
+* **Problematica:** L'evoluzione del traffico criptato (TLS, QUIC) rende obsoleta la *Deep Packet Inspection* (DPI).
+* **Soluzione:** Utilizzo di algoritmi di ML per classificare il traffico basandosi su caratteristiche statistiche dei flussi.
+* **Analisi SAGE:** Implementazione del framework *Shapley Additive Global Importance* (SAGE) per interpretare le decisioni dei modelli.
 
-Workflow
-Data preprocessing and cleaning
-Feature analysis
-Model training
-Performance evaluation
-Comparative analysis of results
+##  Tecnologie e Algoritmi
+Il progetto mette a confronto diversi approcci per valutare quale sia il più affidabile in condizioni reali:
 
-Results
-Compared model performance across selected metrics
-Identified the model that best captures traffic dynamics
-Extracted insights from data to support model selection
+* **Modelli basati su alberi:** `Random Forest`, `XGBoost`
+* **Modelli basati su istanze:** `K-Nearest Neighbors (k-NN)`
+* **Data Collection:** Sistema `PcapMon` per l'acquisizione e caratterizzazione dei dataset.
+* **Librerie principali:** `scikit-learn`, `XGBoost`, `pandas`, `numpy`.
+
