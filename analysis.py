@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import os 
 from scipy import stats
+import matplotlib.ticker as ticker 
 
 
 #configurazione dei parametri per l'analisi comparativa e visualizzazione
@@ -18,32 +19,25 @@ SCENARIOS_FOR_TTEST = ['home_to_home', 'home_to_univr',
 
 def plot_combined_importance(model_type, num_packets):
 
-    """funzione che crea barplot dell'importanza delle feature: 
+    """funzione che crea barplot dell'importanza delle feature per ciascun scenario: 
     - un subplot per ogni feature
     - importanza media con barre di errore 
-    - indice pacchetto sull'asse x
-    - differenza tra scenari evidenziata da colori diversi"""
+    - indice pacchetto sull'asse x """
 
-    all_data = []
+    sns.set_theme(style="whitegrid")
 
     #caricamento dei file .csv riguardanti la feature importance per ciascuno scenario, se esistono, e concatenazione in un unico DataFrame
     for scenario in SCENARIOS:
         path = f'risultati/{model_type}/{num_packets}/feature_importance_{scenario}.csv'
-        if os.path.exists(path):
-            df = pd.read_csv(path)
-            df['Scenario'] = scenario
-            all_data.append(df)
+        if not os.path.exists(path):
+            print(f"File {path} non trovato.")
 
-    if all_data:
-        combined_df = pd.concat(all_data)
+        df = pd.read_csv(path)
 
-        sns.set_theme(style="whitegrid")
-
-        g = sns.catplot(data = combined_df, 
+        g = sns.catplot(data = df,
                         kind = 'bar',
                         x = 'Packet',
                         y = 'Importance',
-                        hue = 'Scenario',
                         col = 'Feature',
                         col_wrap = 2,
                         height = 5,
@@ -52,17 +46,21 @@ def plot_combined_importance(model_type, num_packets):
                         errwidth = 1.5,
                         capsize = 0.2,
                         palette = "muted")
-        g.set_axis_labels("Packet Index", "Average Importance (Log Scale)")
-        g.set_titles("{col_name}")
-        g.despine(left=True)
 
         for ax in g.axes.flat: #utilizzo scala logaritmica per evidenziare meglio le differenze tra feature con importanza molto diversa
             ax.set_yscale('log')
+            ax.set_ylim(0.0001, 1.1) #imposto limiti per la scala logaritmica
+            ax.yaxis.set_major_formatter(ticker.LogFormatterMathtext(base=10)) #formattazione dei tick in notazione scientifica
+            ax.yaxis.set_major_locator(ticker.LogLocator(base=10.0, numticks=10)) #imposto i tick per la scala logaritmica
+
+        g.set_axis_labels("Packet Index", "Average Importance (Log Scale)")
+        g.set_titles("Feature: {col_name}")
+        g.despine(left=True)
 
         plt.subplots_adjust(top=0.9)
-        g.fig.suptitle(f"Feature Importance for {model_type.upper()} - Window {num_packets} Packets", fontsize=16)
+        g.fig.suptitle(f"Feature Importance for {model_type.upper()} - {scenario} - Window {num_packets} Packets", fontsize=16)
 
-        plt.savefig(f'grafici/{model_type}/{num_packets}/combined_feature_importance.png')
+        plt.savefig(f'grafici/{model_type}/{num_packets}/combined_feature_importance_{scenario}.png', dpi=300, bbox_inches='tight')
 
 def perform_comparative_analysis_ttest(model_a, model_b, windows, scenarios):
 
